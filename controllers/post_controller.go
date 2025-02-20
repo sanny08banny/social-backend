@@ -1,28 +1,20 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"social-backend/config"
 	"social-backend/models"
-	"social-backend/queries"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetPosts(c *gin.Context) {
-	rows, err := config.DB.Query(context.Background(), queries.GetPostsQuery)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer rows.Close()
-
 	var posts []models.Post
-	for rows.Next() {
-		var post models.Post
-		rows.Scan(&post.PostID, &post.UserID, &post.Content, &post.DateCreated, &post.LastUpdated)
-		posts = append(posts, post)
+	result := config.DB.Preload("User").Preload("Comments").Preload("Likes").Find(&posts)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, posts)
 }
@@ -34,16 +26,12 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	err := config.DB.QueryRow(
-		context.Background(),
-		queries.CreatePostQuery,
-		post.UserID, post.Content,
-	).Scan(&post.PostID, &post.DateCreated, &post.LastUpdated)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	result := config.DB.Create(&post)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, post)
 }
 
@@ -54,9 +42,11 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	_, err := config.DB.Exec(context.Background(), queries.UpdatePostQuery, post.Content, post.PostID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	result := config.DB.Model(&post).Where("post_id = ?", post.PostID).Updates(models.Post{
+		Content: post.Content,
+	})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
@@ -65,11 +55,66 @@ func UpdatePost(c *gin.Context) {
 
 func DeletePost(c *gin.Context) {
 	postID := c.Param("id")
-	_, err := config.DB.Exec(context.Background(), queries.DeletePostQuery, postID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	result := config.DB.Delete(&models.Post{}, postID)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
+}
+func GetPaginatedPosts(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+
+	var posts []models.Post
+	var totalPosts int64
+
+	config.DB.Model(&models.Post{}).Count(&totalPosts)
+
+	// Convert page and pageSize to integers
+	pageInt := strToInt(page)
+	pageSizeInt := strToInt(pageSize)
+
+	offset := (pageInt - 1) * pageSizeInt
+
+	result := config.DB.Preload("User").Limit(pageSizeInt).Offset(offset).Find(&posts)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	var postDTOs []models.PostDTO
+	for _, post := range posts {
+		var commentCount int64
+		var likeCount int64
+
+		config.DB.Model(&models.Comment{}).Where("post_id = ?", post.PostID).Count(&commentCount)
+		config.DB.Model(&models.Like{}).Where("post_id = ?", post.PostID).Count(&likeCount)
+
+		postDTOs = append(postDTOs, models.PostDTO{
+			PostID:      post.PostID,
+			Content:     post.Content,
+			User:        models.UserDTO{UserID: post.User.UserID, Username: post.User.Username, ProfileName: post.User.ProfileName, ProfilePic: post.User.ProfilePic},
+			DateCreated: post.DateCreated.Format("2006-01-02 15:04:05"),
+			LastUpdated: post.LastUpdated.Format("2006-01-02 15:04:05"),
+			CommentCount: commentCount,
+			LikeCount:    likeCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":       postDTOs,
+		"total_posts": totalPosts,
+		"page":        pageInt,
+		"page_size":   pageSizeInt,
+	})
+}
+
+func strToInt(s string) int {
+	val, err := strconv.Atoi(s)
+	if err != nil {
+		return 1 // default fallback
+	}
+	return val
 }

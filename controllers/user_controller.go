@@ -1,29 +1,23 @@
+
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"social-backend/config"
 	"social-backend/models"
-	"social-backend/queries"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetUsers(c *gin.Context) {
-	rows, err := config.DB.Query(context.Background(), queries.GetUsersQuery)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	var users []models.User
+	result := config.DB.Preload("Posts").Preload("Comments").Preload("Likes").Find(&users)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	defer rows.Close()
 
-	var users []models.User
-	for rows.Next() {
-		var user models.User
-		rows.Scan(&user.UserID, &user.Username, &user.ProfileName, &user.Email, &user.Bio, &user.PhoneNumber, &user.ProfilePic, &user.OnlineStatus, &user.DateCreated, &user.LastUpdated)
-		users = append(users, user)
-	}
 	c.JSON(http.StatusOK, users)
 }
 
@@ -34,16 +28,11 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	err := config.DB.QueryRow(
-		context.Background(),
-		queries.CreateUserQuery,
-		user.Username, user.ProfileName, user.Email, user.Bio, user.PhoneNumber, user.ProfilePic, user.OnlineStatus,
-	).Scan(&user.UserID, &user.DateCreated, &user.LastUpdated)
-
-	if err != nil {
+	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, user)
 }
 
@@ -54,8 +43,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	_, err := config.DB.Exec(context.Background(), queries.UpdateUserQuery, user.Username, user.ProfileName, user.Email, user.Bio, user.PhoneNumber, user.ProfilePic, user.OnlineStatus, user.UserID)
-	if err != nil {
+	if err := config.DB.Model(&user).Where("user_id = ?", user.UserID).Updates(user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -65,8 +53,8 @@ func UpdateUser(c *gin.Context) {
 
 func DeleteUser(c *gin.Context) {
 	userID := c.Param("id")
-	_, err := config.DB.Exec(context.Background(), queries.DeleteUserQuery, userID)
-	if err != nil {
+
+	if err := config.DB.Delete(&models.User{}, userID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

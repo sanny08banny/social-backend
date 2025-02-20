@@ -1,25 +1,25 @@
 package config
 
 import (
-	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"log"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *pgx.Conn
+var DB *gorm.DB
 
 func ConnectDatabase() {
+	dsn := "host=localhost user=postgres dbname=mygodb port=5432 sslmode=disable"
 	var err error
-	DB, err = pgx.Connect(context.Background(), "postgres:///mygodb?user=postgres&sslmode=disable")
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	err = DB.Ping(context.Background())
-	if err != nil {
-		log.Fatalf("Database connection is not alive: %v", err)
-	}
-
-	fmt.Println("Connected to Database")
+	fmt.Println("Database connection established")
 }
+
+

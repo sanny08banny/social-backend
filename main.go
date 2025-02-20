@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"social-backend/config"
 	"social-backend/routes"
 
@@ -10,12 +9,16 @@ import (
 
 func main() {
 	config.ConnectDatabase()
-	defer config.DB.Close(context.Background())
+
 
 	r := gin.Default()
 	routes.UserRoutes(r)
 	routes.PostRoutes(r)
+	routes.ImageRoutes(r)
+	routes.RegisterRoutes(r)
+	
 	// routes.PostRoutes(r)
 
-	r.Run(":8080")
+
+	r.Run("0.0.0.0:8080")
 }

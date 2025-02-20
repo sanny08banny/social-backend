@@ -34,6 +34,7 @@ CREATE TABLE comments (
 CREATE TABLE likes (
     like_id SERIAL PRIMARY KEY,
     post_id INTEGER REFERENCES posts(post_id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(comment_id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
