@@ -114,7 +114,7 @@ func GetPaginatedPosts(c *gin.Context) {
 func strToInt(s string) int {
 	val, err := strconv.Atoi(s)
 	if err != nil {
-		return 1 // default fallback
+		return 1 
 	}
 	return val
 }
