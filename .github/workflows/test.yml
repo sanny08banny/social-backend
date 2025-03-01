@@ -1,0 +1,61 @@
+name: Go Server CI
+
+on: [push, pull_request]  # Runs on push and pull requests
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15  # Use PostgreSQL 15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: mygodb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mygodb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24  # Adjust to match your Go version
+
+      - name: Install Dependencies
+        run: go mod tidy
+
+      - name: Install Goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Run Migrations
+        run: |
+          goose -dir db/migration postgres "postgres://postgres:password@localhost:5432/mygodb?sslmode=disable" up
+
+      - name: Start Go Server in Background
+        run: |
+          nohup go run main.go > server.log 2>&1 &
+
+      - name: Install ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install ngrok
+
+      - name: Start ngrok Tunnel
+        run: |
+          ngrok http 8080 > ngrok.log 2>&1 &
+          sleep 5
+          cat ngrok.log | grep -o "https://[a-zA-Z0-9.-]*.ngrok-free.app" | tee ngrok_url.txt
+
+      - name: Output ngrok URL
+        run: cat ngrok_url.txt
+
