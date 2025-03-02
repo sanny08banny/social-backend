@@ -58,9 +58,9 @@ jobs:
           ngrok http 8080 --log=stdout > ngrok.log 2>&1 &
           sleep 15
           cat ngrok.log 
-          cat ngrok.log | grep -o "https://[a-zA-Z0-9.-]*.ngrok-free.app" | tee ngrok_url.txt
-          - name: Start ngrok Tunnel
+          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url' | tee ngrok_url.txt
 
       - name: Output ngrok URL
         run: cat ngrok_url.txt
+
 
