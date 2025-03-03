@@ -36,11 +36,6 @@ jobs:
       - name: Install Goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
-      - name: Initialize Goose Metadata Table
-        run: |
-          goose -dir db/migration postgres "postgres://postgres@localhost:5432/mygodb?sslmode=disable" up
-          goose -dir db/migration postgres "postgres://postgres@localhost:5432/mygodb?sslmode=disable" status
-
       - name: Run Migrations
         run: |
           goose -dir db/migration postgres "postgres://postgres@localhost:5432/mygodb?sslmode=disable" up
@@ -61,9 +56,10 @@ jobs:
       - name: Start Ngrok Tunnel
         run: |
           nohup ngrok http 8080 --log=stdout > ngrok.log 2>&1 &
-          sleep 10
-          cat ngrok.log
+          sleep 10  # Allow Ngrok time to initialize
+          cat ngrok.log  # Print Ngrok logs for debugging
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url' | tee ngrok_url.txt || echo "Ngrok tunnel failed to start!"
+          sleep 3600  # Keep Ngrok running
 
       - name: Output Ngrok URL
         run: cat ngrok_url.txt
