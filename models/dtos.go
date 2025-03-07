@@ -16,4 +16,6 @@ type PostDTO struct {
 	LastUpdated  string   `json:"last_updated"`
 	CommentCount int64    `json:"comment_count"`
 	LikeCount    int64    `json:"like_count"`
+	BookMarkCount    int64    `json:"bookmark_count"`
+
 }

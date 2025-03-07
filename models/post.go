@@ -10,7 +10,9 @@ type Post struct {
 	DateCreated time.Time `gorm:"autoCreateTime" json:"date_created"`
 	LastUpdated time.Time `gorm:"autoUpdateTime" json:"last_updated"`
 
-	User     User      `gorm:"foreignKey:UserID" json:"user"`
+	User     User      `gorm:"foreignKey:UserID;references:UserID" json:"user"`
 	Comments []Comment `gorm:"foreignKey:PostID" json:"comments"`
 	Likes    []Like    `gorm:"foreignKey:PostID" json:"likes"`
+	BookMarks    []BookMark    `gorm:"foreignKey:PostID" json:"bookmarks"`
+
 }

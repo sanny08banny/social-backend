@@ -12,4 +12,5 @@ func PostRoutes(router *gin.Engine) {
 	router.POST("/posts", controllers.CreatePost)
 	router.PUT("/posts", controllers.UpdatePost)
 	router.DELETE("/post/:id", controllers.DeletePost)
+	router.GET("/posts/:post_id", controllers.GetPostById)
 }

@@ -7,9 +7,9 @@ const (
 	`
 
 	CreateUserQuery = `
-		INSERT INTO users (username, profile_name, email, bio, phone_number, profile_pic, online_status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING user_id, date_created, last_updated
+    INSERT INTO users (username, profile_name, email, password, bio, phone_number, profile_pic, online_status)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING user_id, date_created, last_updated
 	`
 
 	UpdateUserQuery = `

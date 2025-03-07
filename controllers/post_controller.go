@@ -11,12 +11,19 @@ import (
 
 func GetPosts(c *gin.Context) {
 	var posts []models.Post
-	result := config.DB.Preload("User").Preload("Comments").Preload("Likes").Find(&posts)
+	result := config.DB.Preload("User").Preload("Comments").Preload("Likes").Preload("BookMarks").Find(&posts)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, posts)
+}
+
+func GetPostById(c *gin.Context) {
+	var post []models.Post
+	postID := c.Param("post_id")
+	config.DB.Where("post_id = ?", postID).Preload("User").Preload("Comments").Preload("Likes").Preload("BookMarks").Find(&post)
+	c.JSON(http.StatusOK, post)
 }
 
 func CreatePost(c *gin.Context) {
@@ -88,9 +95,12 @@ func GetPaginatedPosts(c *gin.Context) {
 	for _, post := range posts {
 		var commentCount int64
 		var likeCount int64
+		var bookmarkCount int64
 
 		config.DB.Model(&models.Comment{}).Where("post_id = ?", post.PostID).Count(&commentCount)
 		config.DB.Model(&models.Like{}).Where("post_id = ?", post.PostID).Count(&likeCount)
+		config.DB.Model(&models.BookMark{}).Where("post_id = ?", post.PostID).Count(&bookmarkCount)
+
 
 		postDTOs = append(postDTOs, models.PostDTO{
 			PostID:      post.PostID,
@@ -100,6 +110,7 @@ func GetPaginatedPosts(c *gin.Context) {
 			LastUpdated: post.LastUpdated.Format("2006-01-02 15:04:05"),
 			CommentCount: commentCount,
 			LikeCount:    likeCount,
+			BookMarkCount: bookmarkCount,
 		})
 	}
 
