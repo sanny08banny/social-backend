@@ -2,18 +2,21 @@ package utils
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // UploadImage - Create
 func UploadImage(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
+		log.Println("Failed to read request body:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get image"})
 		return
 	}

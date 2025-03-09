@@ -15,7 +15,7 @@ func CreateLike(c *gin.Context) {
 		return
 	}
 	config.DB.Create(&like)
-	c.JSON(http.StatusCreated, like)
+	c.JSON(http.StatusCreated, gin.H{"message": "Like created successfully"})
 }
 
 func GetLikesByUser(c *gin.Context) {
