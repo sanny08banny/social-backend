@@ -2,7 +2,7 @@ package queries
 
 const (
 	GetPostsQuery = `
-		SELECT post_id, user_id, content, date_created, last_updated
+		SELECT post_id, user_id, content, date_created, last_updated, view_count, repost_count, comment_count, like_count, bookmark_count
 		FROM posts
 	`
 
@@ -20,6 +20,18 @@ const (
 
 	DeletePostQuery = `
 		DELETE FROM posts
+		WHERE post_id = $1
+	`
+
+	IncrementViewCountQuery = `
+		UPDATE posts
+		SET view_count = view_count + 1
+		WHERE post_id = $1
+	`
+
+	IncrementRepostCountQuery = `
+		UPDATE posts
+		SET repost_count = repost_count + 1
 		WHERE post_id = $1
 	`
 )

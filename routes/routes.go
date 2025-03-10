@@ -11,6 +11,7 @@ func RegisterRoutes(router *gin.Engine) {
 	{
 		commentGroup.POST("/", controllers.CreateComment)
 		commentGroup.GET("/user/:user_id", controllers.GetCommentsByUser)
+		commentGroup.GET("/posts/:post_id", controllers.GetCommentsByPost)
 		commentGroup.DELETE("/:id", controllers.DeleteComment)
 	}
 

@@ -17,7 +17,7 @@ import (
 // Get all users
 func GetUsers(c *gin.Context) {
 	var users []models.User
-	result := config.DB.Preload("Posts").Preload("Comments").Preload("Likes").Find(&users)
+	result := config.DB.Find(&users)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -192,4 +192,44 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+func RegisterSession(c *gin.Context) {
+	var loginData struct {
+		Email    string `json:"email"`
+	}
+
+	if err := c.ShouldBindJSON(&loginData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	var user models.User
+	if err := config.DB.Where("email = ?", loginData.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	// Generate JWT token
+	token, err := auth.GenerateJWT(user.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+func ValidateUserJWT(c *gin.Context) {
+	userID, exists := c.Get("user_id") // Extract logged-in user ID from context
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+log.Println("User found")
+
+	if userID != nil {
+		c.JSON(http.StatusOK, gin.H{"status": "Authorized"})
+		return
+	}
+}
+
 
