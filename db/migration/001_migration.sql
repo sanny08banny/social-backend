@@ -21,7 +21,8 @@ CREATE TABLE posts (
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     view_count INTEGER DEFAULT 0, -- Tracks unique views
-    repost_count INTEGER DEFAULT 0, -- Tracks the number of reposts
+    repost_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0, -- Tracks the number of reposts
     like_count INTEGER DEFAULT 0, -- Tracks total likes
     bookmark_count INTEGER DEFAULT 0 -- Tracks total bookmarks
 );
