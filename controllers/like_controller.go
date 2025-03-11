@@ -44,20 +44,34 @@ func GetLikesByUser(c *gin.Context) {
 
 // Delete a like and update like count
 func DeleteLike(c *gin.Context) {
-	likeID := c.Param("id")
-
-	// Retrieve like to get post_id before deleting
 	var like models.Like
-	if err := config.DB.First(&like, likeID).Error; err != nil {
+	if err := c.ShouldBindJSON(&like); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if the like exists
+	var existingLike models.Like
+	err := config.DB.Where("user_id = ? AND post_id = ?", like.UserID, like.PostID).First(&existingLike).Error
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Like not found"})
 		return
 	}
 
 	// Delete like
-	config.DB.Delete(&like)
+	if err := config.DB.Delete(&existingLike).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove like"})
+		return
+	}
 
-	// Decrement like count
-	config.DB.Model(&models.Post{}).Where("post_id = ?", like.PostID).Update("like_count", gorm.Expr("like_count - 1"))
+	// Decrement like count safely
+	if err := config.DB.Model(&models.Post{}).
+		Where("post_id = ? AND like_count > 0", like.PostID).
+		Update("like_count", gorm.Expr("like_count - 1")).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update like count"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Like removed successfully"})
 }
+

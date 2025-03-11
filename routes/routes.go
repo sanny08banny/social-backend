@@ -19,6 +19,6 @@ func RegisterRoutes(router *gin.Engine) {
 	{
 		likeGroup.POST("/", controllers.CreateLike)
 		likeGroup.GET("/user/:user_id", controllers.GetLikesByUser)
-		likeGroup.DELETE("/:id", controllers.DeleteLike)
+		likeGroup.DELETE("/", controllers.DeleteLike)
 	}
 }
