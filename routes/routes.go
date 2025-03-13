@@ -21,4 +21,16 @@ func RegisterRoutes(router *gin.Engine) {
 		likeGroup.GET("/user/:user_id", controllers.GetLikesByUser)
 		likeGroup.DELETE("/", controllers.DeleteLike)
 	}
+	bookmarkGroup := router.Group("/bookmarks")
+	{
+		bookmarkGroup.POST("/", controllers.CreateBookmark)
+		bookmarkGroup.GET("/user/:user_id", controllers.GetBookmarksByUser)
+		bookmarkGroup.DELETE("/", controllers.DeleteBookmark)
+	}
+	repostGroup := router.Group("/reposts")
+	{
+		repostGroup.POST("/", controllers.CreateRepost)
+		repostGroup.GET("/user/:user_id", controllers.GetRepostsByUser)
+		repostGroup.DELETE("/", controllers.DeleteRepost)
+	}
 }

@@ -19,7 +19,7 @@ func CreateBookmark(c *gin.Context) {
 
 	// Prevent duplicate bookmarks
 	var existingBookmark models.BookMark
-	err := config.DB.Raw(queries.GetBookmarkByIDQuery, bookmark.UserID, bookmark.PostID).Scan(&existingBookmark).Error
+	err := config.DB.Raw(queries.GetBookmarkByUserAndPostQuery, bookmark.UserID, bookmark.PostID).Scan(&existingBookmark).Error
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Post already bookmarked"})
 		return
@@ -42,18 +42,19 @@ func GetBookmarksByUser(c *gin.Context) {
 
 // Delete bookmark and update count
 func DeleteBookmark(c *gin.Context) {
-	bookmarkID := c.Param("id")
+	PostID := c.Query("post_id")
+	UserID := c.Query("user_id")
 
-	// Get post ID before deletion
-	var bookmark models.BookMark
-	if err := config.DB.Raw(queries.GetBookmarkByIDQuery, bookmarkID).Scan(&bookmark).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Bookmark not found"})
+	var existingBookmark models.BookMark
+	err := config.DB.Raw(queries.GetBookmarkByUserAndPostQuery, UserID, PostID).Scan(&existingBookmark).Error
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bookmark doesn't exist"})
 		return
 	}
 
 	// Delete bookmark and update count
-	config.DB.Exec(queries.DeleteBookmarkQuery, bookmarkID)
-	config.DB.Exec(queries.UpdateBookmarkCountQuery, bookmark.PostID)
+	config.DB.Exec(queries.DeleteBookmarkQuery, existingBookmark.BookMarkID)
+	config.DB.Exec(queries.UpdateBookmarkCountQuery, PostID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bookmark removed successfully"})
 }

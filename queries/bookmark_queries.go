@@ -3,6 +3,7 @@ package queries
 const (
 	GetBookmarksQuery    = "SELECT * FROM bookmarks"
 	GetBookmarkByIDQuery = "SELECT * FROM bookmarks WHERE bookmark_id = $1"
+	GetBookmarkByUserAndPostQuery = "SELECT * FROM bookmarks WHERE user_id = $1 AND post_id = $2"
 	CreateBookmarkQuery  = `
 		INSERT INTO bookmarks (user_id, post_id)
 		VALUES ($1, $2)
