@@ -10,13 +10,25 @@ CREATE TABLE users (
     profile_pic TEXT,
     online_status VARCHAR(20) DEFAULT 'offline',
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    followers INTEGER DEFAULT 0,
+    following INTEGER DEFAULT 0
+);
+CREATE TABLE follows (
+    follow_id SERIAL PRIMARY KEY,
+    owner_id INT NOT NULL,
+    user_id INT NOT NULL,
+    followed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT unique_follow UNIQUE (owner_id, user_id)
 );
 
 CREATE TABLE posts (
     post_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
     content TEXT,
+    category TEXt,
     -- image_url TEXT,
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -76,6 +88,7 @@ CREATE TABLE reposts (
 );
 
 -- +goose Down
+DROP TABLE IF EXISTS follows;
 DROP TABLE IF EXISTS reposts;
 DROP TABLE IF EXISTS post_views;
 DROP TABLE IF EXISTS bookmarks;

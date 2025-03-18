@@ -21,6 +21,7 @@ type Post struct {
 	UserID        uint      `json:"user_id"`
 	User          User      `gorm:"foreignKey:UserID;references:UserID" json:"user"`
 	Content       string    `json:"content"`
+	Category      string    `json:"category"`
 	DateCreated   time.Time `gorm:"autoCreateTime" json:"date_created"`
 	LastUpdated   time.Time `gorm:"autoUpdateTime" json:"last_updated"`
 	ViewCount     int64     `gorm:"default:0" json:"view_count"`

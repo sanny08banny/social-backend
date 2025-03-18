@@ -19,6 +19,7 @@ func UserRoutes(router *gin.Engine) {
 	protected.Use(middleware.JWTAuthMiddleware()) // Apply JWT middleware
 	{
 		protected.GET("/users/validate",controllers.ValidateUserJWT)
+		protected.GET("/users/:user_id", controllers.GetUserById)
 
 	}
 }

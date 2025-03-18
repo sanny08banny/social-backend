@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"social-backend/config"
 	"social-backend/models"
+	"social-backend/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -111,7 +112,39 @@ func GetPostById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, post)
 }
+func GetPostsByUserId(c *gin.Context) {
+	receivedUserID := c.Param("user_id")
+	userID, exists := c.Get("user_id") // Extract logged-in user ID from context
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
+	var posts []models.Post
+	result := config.DB.Where("user_id = ?", receivedUserID).Preload("User").Order("date_created DESC").Find(&posts)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	// Get post IDs for batch querying
+	postIDs := make([]uint, len(posts))
+	for i, post := range posts {
+		postIDs[i] = post.PostID
+	}
+
+	// Fetch likes and bookmarks in bulk for efficiency
+	likedPostIDs := getUserLikedPostIDs(userID.(uint), postIDs)
+	bookmarkedPostIDs := getUserBookmarkedPostIDs(userID.(uint), postIDs)
+
+	// Assign `IsLiked` and `IsBookmarked`
+	for i := range posts {
+		posts[i].IsLiked = likedPostIDs[posts[i].PostID]
+		posts[i].IsBookmarked = bookmarkedPostIDs[posts[i].PostID]
+	}
+
+	c.JSON(http.StatusOK, posts)
+}
 // Create a new post
 func CreatePost(c *gin.Context) {
 	var post models.Post
@@ -120,13 +153,26 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
+	// Save post to DB first
 	result := config.DB.Create(&post)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
+	// Respond to client immediately
 	c.JSON(http.StatusCreated, post)
+
+	// Perform classification in a Goroutine (asynchronously)
+	go classifyAndUpdatePost(post.PostID, post.Content)
+}
+
+// classifyAndUpdatePost classifies a post and updates it in the database
+func classifyAndUpdatePost(postID uint, content string) {
+	category := utils.ClassifyPost(content) // Get category
+
+	// Update the post asynchronously
+	config.DB.Model(&models.Post{}).Where("post_id = ?", postID).Update("category", category)
 }
 
 // Update a post

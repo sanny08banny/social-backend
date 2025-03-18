@@ -33,4 +33,11 @@ func RegisterRoutes(router *gin.Engine) {
 		repostGroup.GET("/user/:user_id", controllers.GetRepostsByUser)
 		repostGroup.DELETE("/", controllers.DeleteRepost)
 	}
+
+	categoriesGroup := router.Group("")
+	{
+		categoriesGroup.GET("/categories", controllers.GetCategoriesWithPosts)
+		categoriesGroup.GET("/categories/:category/posts", controllers.GetPostsByCategory)
+	}
+
 }

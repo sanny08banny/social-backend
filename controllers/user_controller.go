@@ -43,7 +43,7 @@ func CreateUser(c *gin.Context) {
 
 	// Log raw JSON request for debugging
 	log.Printf("Received request body: %s", string(body))
-	
+
 	// Log the incoming JSON request
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Println("Invalid JSON input:", err)
@@ -121,6 +121,31 @@ func UpdateUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
+func GetUserById(c *gin.Context) {
+	ownerID, exists := c.Get("user_id") // Extract logged-in user ID from context
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	var user models.User
+	userID := c.Param("user_id")
+
+	// Retrieve details
+	result := config.DB.First(&user, userID)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var existingFollow models.Follow
+	err := config.DB.Where("user_id = ? AND owner_id = ?", userID, ownerID).First(&existingFollow).Error
+	followExists := err == nil
+
+	c.JSON(http.StatusOK, gin.H{
+		"user":        user,
+		"isFollowing": followExists,
+	})
+}
 
 // Delete user
 func DeleteUser(c *gin.Context) {
@@ -194,7 +219,7 @@ func Login(c *gin.Context) {
 }
 func RegisterSession(c *gin.Context) {
 	var loginData struct {
-		Email    string `json:"email"`
+		Email string `json:"email"`
 	}
 
 	if err := c.ShouldBindJSON(&loginData); err != nil {
@@ -224,12 +249,10 @@ func ValidateUserJWT(c *gin.Context) {
 		return
 	}
 
-log.Println("User found")
+	log.Println("User found")
 
 	if userID != nil {
 		c.JSON(http.StatusOK, gin.H{"status": "Authorized"})
 		return
 	}
 }
-
-

@@ -37,7 +37,10 @@ type User struct {
 	OnlineStatus string    `gorm:"default:'offline'" json:"online_status"`
 	DateCreated  time.Time `gorm:"autoCreateTime" json:"date_created"`
 	LastUpdated  time.Time `gorm:"autoUpdateTime" json:"last_updated"`
+	Followers    uint      `gorm:"default:0" json:"followers"`
+	Following    uint      `gorm:"default:0" json:"following"`
 }
+
 
 type NewUser struct {
 	UserID       uint      `gorm:"primaryKey" json:"user_id"`

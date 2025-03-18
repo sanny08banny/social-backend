@@ -13,6 +13,7 @@ func PostRoutes(router *gin.Engine) {
 	protected.Use(middleware.JWTAuthMiddleware()) // Apply JWT middleware
 	{
 		protected.GET("/posts/:post_id", controllers.GetPostById)
+		protected.GET("/posts/user/:user_id", controllers.GetPostsByUserId)
 		protected.GET("/posts", controllers.GetPosts)
 		protected.GET("/posts/paginated", controllers.GetPaginatedPosts)
 	}

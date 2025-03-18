@@ -16,6 +16,7 @@ func main() {
 	routes.PostRoutes(r)
 	routes.ImageRoutes(r)
 	routes.RegisterRoutes(r)
+	routes.InteractionRoutes(r)
 	
 	// routes.PostRoutes(r)
 
