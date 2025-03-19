@@ -50,7 +50,7 @@ func GetFollowsByUser(c *gin.Context) {
 	userID := c.Param("user_id")
 
 	var following []models.Follow
-	config.DB.Where("owner_id = ?", userID).Preload("User").Find(&following)
+	config.DB.Where("owner_id = ?", userID).Preload("OwnerUser").Preload("User").Find(&following)
 
 	c.JSON(http.StatusOK, following)
 }
