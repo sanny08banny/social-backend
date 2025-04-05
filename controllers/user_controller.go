@@ -256,3 +256,27 @@ func ValidateUserJWT(c *gin.Context) {
 		return
 	}
 }
+func GetPaginatedUsers(c *gin.Context) {
+	// userID, exists := c.Get("user_id") // Extract logged-in user ID from context
+
+	page := strToInt(c.DefaultQuery("page", "1"))
+	pageSize := strToInt(c.DefaultQuery("page_size", "10"))
+	offset := (page - 1) * pageSize
+
+	var users []models.User
+	var totalUsers int64
+
+	// Get total user count for pagination
+	config.DB.Model(&models.User{}).Count(&totalUsers)
+
+	// Fetch paginated users
+	result := config.DB.Order("date_created DESC").Limit(pageSize).Offset(offset).Find(&users)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	// Return paginated response
+	c.JSON(http.StatusOK, users)
+}
+

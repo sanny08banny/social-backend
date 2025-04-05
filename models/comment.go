@@ -8,6 +8,8 @@ type Comment struct {
 	UserID      uint      `gorm:"index" json:"user_id"`
 	ParentID    *uint     `gorm:"index" json:"parent_id"` // For nested comments (self-referencing)
 	Content     string    `json:"content"`
+	// LikeCount     int64     `gorm:"default:0" json:"like_count"`
+	// BookmarkCount int64     `gorm:"default:0" json:"bookmark_count"`
 	DateCreated time.Time `gorm:"autoCreateTime" json:"date_created"`
 	LastUpdated time.Time `gorm:"autoUpdateTime" json:"last_updated"`
 

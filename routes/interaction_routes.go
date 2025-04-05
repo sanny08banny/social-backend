@@ -23,4 +23,8 @@ func InteractionRoutes(router *gin.Engine) {
 		followerGroup.GET("/", controllers.GetFollowersPaginated)               // Get paginated followers (optional user_id)
 		followerGroup.GET("/:user_id/paginated", controllers.GetFollowersPaginated) // Get paginated followers for a user
 	}
+	suggestionGroup := router.Group("/suggestions").Use(middleware.JWTAuthMiddleware())
+	{
+		suggestionGroup.GET("/users", controllers.GetPaginatedUsers)         
+	}
 }

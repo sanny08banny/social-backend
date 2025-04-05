@@ -19,11 +19,12 @@ func CreateBookmark(c *gin.Context) {
 
 	// Prevent duplicate bookmarks
 	var existingBookmark models.BookMark
-	err := config.DB.Raw(queries.GetBookmarkByUserAndPostQuery, bookmark.UserID, bookmark.PostID).Scan(&existingBookmark).Error
+	err := config.DB.Where("user_id = ? AND post_id = ?", bookmark.UserID, bookmark.PostID).First(&existingBookmark).Error
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Post already bookmarked"})
 		return
 	}
+
 
 	// Insert bookmark and update count
 	config.DB.Exec(queries.CreateBookmarkQuery, bookmark.UserID, bookmark.PostID)
@@ -36,7 +37,12 @@ func CreateBookmark(c *gin.Context) {
 func GetBookmarksByUser(c *gin.Context) {
 	var bookmarks []models.BookMark
 	userID := c.Param("user_id")
-	config.DB.Raw(queries.GetBookmarksQuery+" WHERE user_id = ?", userID).Scan(&bookmarks)
+	result := config.DB.Where("user_id = ?", userID).Preload("Post").Preload("Post.User").Find(&bookmarks)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, bookmarks)
 }
 
@@ -46,7 +52,7 @@ func DeleteBookmark(c *gin.Context) {
 	UserID := c.Query("user_id")
 
 	var existingBookmark models.BookMark
-	err := config.DB.Raw(queries.GetBookmarkByUserAndPostQuery, UserID, PostID).Scan(&existingBookmark).Error
+	err := config.DB.Where("user_id = ? AND post_id = ?", UserID, PostID).First(&existingBookmark).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bookmark doesn't exist"})
 		return

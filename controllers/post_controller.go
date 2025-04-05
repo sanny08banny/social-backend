@@ -6,7 +6,10 @@ import (
 	"social-backend/config"
 	"social-backend/models"
 	"social-backend/utils"
+	"sort"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -306,4 +309,142 @@ func strToInt(s string) int {
 		return 1
 	}
 	return val
+}
+
+func GetFriendsPosts(c *gin.Context) {
+	var allPosts []models.Post
+	userID, exists := c.Get("user_id") // Extract logged-in user ID from context
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	log.Printf("Received request user: %s", userID)
+	var follows []models.Follow
+
+	if err := config.DB.Where("user_id = ?", userID).Find(&follows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	uniqueIDs := uniqueSortedList(follows)
+
+	for i := range uniqueIDs{
+
+	var posts []models.Post
+	result := config.DB.Where("user_id = ?", uniqueIDs[i]).Preload("User").Order("date_created DESC").Find(&posts)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+	allPosts = append(allPosts, posts...)
+}
+
+	// Get post IDs for batch querying
+	postIDs := make([]uint, len(allPosts))
+	for i, post := range allPosts {
+		postIDs[i] = post.PostID
+	}
+
+	// Fetch likes and bookmarks in bulk for efficiency
+	likedPostIDs := getUserLikedPostIDs(userID.(uint), postIDs)
+	bookmarkedPostIDs := getUserBookmarkedPostIDs(userID.(uint), postIDs)
+
+	// Assign `IsLiked` and `IsBookmarked`
+	for i := range allPosts {
+		allPosts[i].IsLiked = likedPostIDs[allPosts[i].PostID]
+		allPosts[i].IsBookmarked = bookmarkedPostIDs[allPosts[i].PostID]
+	}
+
+	c.JSON(http.StatusOK, allPosts)
+}
+func uniqueSortedList(follows []models.Follow) []uint {
+	// Step 1: Collect all user_id and owner_id in a slice
+	var allIDs []uint
+	for _, follow := range follows {
+		allIDs = append(allIDs, follow.UserID, follow.OwnerID)
+	}
+
+	// Step 2: Sort the slice
+	sort.Slice(allIDs, func(i, j int) bool { return allIDs[i] < allIDs[j] })
+
+	// Step 3: Remove duplicates in O(n) time
+	var uniqueIDs []uint
+	for i, id := range allIDs {
+		if i == 0 || id != allIDs[i-1] { // Add only if not duplicate
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	return uniqueIDs
+}
+func GetPostsAndReposts(c *gin.Context) {
+    var posts []models.Post
+    var reposts []models.Repost
+    
+    page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+    pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+    offset := (page - 1) * pageSize
+    
+	var totalCount int64
+
+	config.DB.Raw("SELECT (SELECT COUNT(*) FROM posts) + (SELECT COUNT(*) FROM reposts)").Scan(&totalCount)	
+    
+    var wg sync.WaitGroup
+    var postErr, repostErr error
+    
+    wg.Add(2)
+    
+    go func() {
+        defer wg.Done()
+        postErr = config.DB.Preload("User").Order("date_created DESC").Limit(pageSize).Offset(offset).Find(&posts).Error
+    }()
+    
+    go func() {
+        defer wg.Done()
+        repostErr = config.DB.Preload("User").Preload("Post").Preload("Post.User").Order("reposted_at DESC").Limit(pageSize).Offset(offset).Find(&reposts).Error
+    }()
+    
+    wg.Wait()
+    
+    if postErr != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch posts"})
+        return
+    }
+    
+    if repostErr != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reposts"})
+        return
+    }
+    
+	combined := make([]interface{}, 0, len(posts)+len(reposts))
+    
+    for _, post := range posts {
+        combined = append(combined, post)
+    }
+    
+    for _, repost := range reposts {
+        combined = append(combined, repost)
+    }
+    
+    // Sort combined list by date descending
+    sort.Slice(combined, func(i, j int) bool {
+        return getDate(combined[i]).After(getDate(combined[j]))
+    })
+    
+	c.JSON(http.StatusOK, gin.H{
+		"data":        combined,
+		"total_posts": totalCount,
+		"page":        page,
+		"page_size":   pageSize,
+	})
+}
+
+func getDate(item interface{}) time.Time {
+    switch v := item.(type) {
+    case models.Post:
+        return v.DateCreated
+    case models.Repost:
+        return v.RepostedAt
+    }
+    return time.Time{}
 }

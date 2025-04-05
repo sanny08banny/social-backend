@@ -9,7 +9,7 @@ type BookMark struct {
 	DateCreated time.Time `gorm:"autoCreateTime" json:"date_created"`
 	LastUpdated time.Time `gorm:"autoUpdateTime" json:"last_updated"`
 
-	Post Post `gorm:"foreignKey:PostID" json:"post"`
+	Post Post `gorm:"foreignKey:PostID;references:PostID;constraint:OnDelete:CASCADE;" json:"post"`
 	User User `gorm:"foreignKey:UserID" json:"user"`
 }
 

@@ -29,6 +29,6 @@ type Post struct {
 	CommentCount   int64     `gorm:"default:0" json:"comment_count"`
 	LikeCount     int64     `gorm:"default:0" json:"like_count"`
 	BookmarkCount int64     `gorm:"default:0" json:"bookmark_count"`
-	IsLiked       bool      `gorm:"-" json:"is_liked"`       // Dynamically computed
+	IsLiked       bool      `gorm:"-" json:"is_liked"`       
 	IsBookmarked  bool      `gorm:"-" json:"is_bookmarked"`
 }

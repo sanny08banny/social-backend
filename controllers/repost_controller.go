@@ -38,21 +38,21 @@ func GetRepostsByUser(c *gin.Context) {
 	userID := c.Param("user_id")
 
 	var reposts []models.Repost
-	config.DB.Where("user_id = ?", userID).Find(&reposts)
+	config.DB.Where("user_id = ?", userID).Preload("Post").Preload("User").Find(&reposts)
 
-	posts := make([]models.Post, len(reposts))
+	// posts := make([]models.Post, len(reposts))
 
 
-	for i, repost := range reposts {
-		var post models.Post
-		result := config.DB.Preload("User").First(&post, repost.OriginalPostID)
-		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
-			return
-		}
-		posts[i] = post 
-	}
-	c.JSON(http.StatusOK, posts)
+	// for i, repost := range reposts {
+	// 	var post models.Post
+	// 	result := config.DB.Preload("User").First(&post, repost.OriginalPostID)
+	// 	if result.Error != nil {
+	// 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+	// 		return
+	// 	}
+	// 	posts[i] = post 
+	// }
+	c.JSON(http.StatusOK, reposts)
 }
 
 // Delete a like and update like count

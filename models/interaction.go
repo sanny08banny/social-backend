@@ -16,6 +16,9 @@ type Repost struct {
 	OriginalPostID uint      `json:"original_post_id"`
 	UserID         uint      `json:"user_id"`
 	RepostedAt     time.Time `gorm:"autoCreateTime" json:"reposted_at"`
+
+	Post Post `gorm:"foreignKey:OriginalPostID;references:PostID;constraint:OnDelete:CASCADE;" json:"post"`
+	User User `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE;" json:"user"`
 }
 
 type Follow struct {

@@ -23,7 +23,7 @@ func RegisterRoutes(router *gin.Engine) {
 	}
 	bookmarkGroup := router.Group("/bookmarks")
 	{
-		bookmarkGroup.POST("/", controllers.CreateBookmark)
+		bookmarkGroup.POST("", controllers.CreateBookmark)
 		bookmarkGroup.GET("/user/:user_id", controllers.GetBookmarksByUser)
 		bookmarkGroup.DELETE("/", controllers.DeleteBookmark)
 	}
@@ -39,5 +39,5 @@ func RegisterRoutes(router *gin.Engine) {
 		categoriesGroup.GET("/categories", controllers.GetCategoriesWithPosts)
 		categoriesGroup.GET("/categories/:category/posts", controllers.GetPostsByCategory)
 	}
-
+	router.GET("/search", controllers.SearchHandler)
 }
