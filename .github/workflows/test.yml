@@ -59,7 +59,7 @@ jobs:
           sleep 10  # Allow Ngrok time to initialize
           cat ngrok.log  # Print Ngrok logs for debugging
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url' | tee ngrok_url.txt || echo "Ngrok tunnel failed to start!"
-          sleep 3600  # Keep Ngrok running
+          sleep 36000  # Keep Ngrok running
 
       - name: Output Ngrok URL
         run: cat ngrok_url.txt
